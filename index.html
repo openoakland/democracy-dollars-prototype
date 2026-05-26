@@ -363,30 +363,49 @@
     .accordion-button {
       width: 100%;
       border: 0;
-      border-radius: 12px;
+      border-radius: var(--radius-default);
       padding: 1.1rem;
       background: var(--card);
-      font-weight: 800;
-      font-size: 1.25rem;
+      font-weight: var(--font-weight-bold);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-button);
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: .75rem;
     }
 
+    .accordion-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      font-size: 1.75rem;
+      line-height: 1;
+      font-weight: var(--font-weight-bold);
+    }
+
     .candidate-list {
       display: grid;
-      gap: .85rem;
-      margin: .75rem 0 1.25rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+      margin: .75rem 0 1.75rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .review-list {
+      display: grid;
+      gap: 1.25rem;
+      margin: 1.25rem 0 1.5rem;
     }
 
     .candidate-row {
       display: grid;
       grid-template-columns: 1fr auto auto auto;
       align-items: center;
-      gap: .75rem;
+      gap: .85rem;
+      min-height: 52px;
     }
 
     .candidate-row a {
@@ -400,8 +419,8 @@
     }
 
     .amount-button {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border: 0;
       border-radius: 8px;
       background: var(--green);
@@ -548,12 +567,21 @@
     const state = {
       screen: 'idFork',
       userName: 'Dani Villar',
+      openSections: {
+        citywide: false,
+        cityCouncil: false,
+        schoolBoard: true
+      },
       donations: {
         claire: 0,
         john: 0,
         rae: 0,
         sec: 0,
-        ted: 0
+        ted: 0,
+        maya: 0,
+        oscar: 0,
+        alicia: 0,
+        sam: 0
       },
       certified: false,
       form: {
@@ -568,7 +596,11 @@
       { id: 'john', name: 'John Johnson', office: 'School Board District 2' },
       { id: 'rae', name: 'Rae Raeson', office: 'School Board District 2' },
       { id: 'sec', name: 'Sec Chell', office: 'Citywide' },
-      { id: 'ted', name: 'Ted Boots', office: 'Citywide' }
+      { id: 'ted', name: 'Ted Boots', office: 'Citywide' },
+      { id: 'maya', name: 'Maya Martins', office: 'Mayor' },
+      { id: 'oscar', name: 'Oscar Ortega', office: 'City Auditor' },
+      { id: 'alicia', name: 'Alicia Adams', office: 'City Council District 4' },
+      { id: 'sam', name: 'Sam Simmons', office: 'City Council District 4' }
     ];
 
     const main = document.getElementById('main');
@@ -626,6 +658,22 @@
       state.donations[id] = next;
       render();
       announce(`${candidate.name} donation updated to $${next}. Total assigned: $${totalAssigned()} of $100.`);
+    }
+
+    function toggleSection(sectionId) {
+      state.openSections[sectionId] = !state.openSections[sectionId];
+      render();
+      const label = sectionId === 'citywide' ? 'Citywide' : sectionId === 'cityCouncil' ? 'City Council' : 'School Board';
+      announce(`${label} section ${state.openSections[sectionId] ? 'expanded' : 'collapsed'}.`);
+    }
+
+    function accordionButton(sectionId, label) {
+      const isOpen = state.openSections[sectionId];
+      return `
+        <button class="accordion-button" type="button" aria-expanded="${isOpen}" aria-controls="${sectionId}-panel" onclick="toggleSection('${sectionId}')">
+          ${label} <span class="accordion-chevron" aria-hidden="true">${isOpen ? '⌄' : '›'}</span>
+        </button>
+      `;
     }
 
     function candidateRows(ids = ['claire', 'john', 'rae']) {
@@ -776,16 +824,36 @@
           </section>
           <label class="sr-only" for="candidate-search">Search by candidate or office</label>
           <input id="candidate-search" class="candidate-search" type="text" placeholder="Search by candidate or office" aria-label="Search by candidate or office" />
-          <button class="accordion-button" type="button" aria-expanded="false" onclick="announce('Citywide section is collapsed in this prototype.')">Citywide <span aria-hidden="true">⌃</span></button>
-          <button class="accordion-button" type="button" aria-expanded="false" onclick="announce('City Council section is collapsed in this prototype.')">City Council <span aria-hidden="true">⌃</span></button>
-          <button class="accordion-button" type="button" aria-expanded="true">School Board <span aria-hidden="true">⌄</span></button>
-          <h2>District 2</h2>
-          <div class="candidate-list" aria-label="School Board District 2 candidates">
-            ${candidateRows(['claire', 'john', 'rae'])}
+          ${accordionButton('citywide', 'Citywide')}
+          <div id="citywide-panel" ${state.openSections.citywide ? '' : 'hidden'}>
+            <h2>Mayor</h2>
+            <div class="candidate-list" aria-label="Mayoral candidates">
+              ${candidateRows(['maya'])}
+            </div>
+            <h2>City Auditor</h2>
+            <div class="candidate-list" aria-label="City Auditor candidates">
+              ${candidateRows(['oscar'])}
+            </div>
           </div>
-          <h2>District 6</h2>
-          <div class="candidate-list" aria-label="School Board District 6 candidates">
-            ${candidateRows(['sec', 'ted'])}
+
+          ${accordionButton('cityCouncil', 'City Council')}
+          <div id="cityCouncil-panel" ${state.openSections.cityCouncil ? '' : 'hidden'}>
+            <h2>District 4</h2>
+            <div class="candidate-list" aria-label="City Council District 4 candidates">
+              ${candidateRows(['alicia', 'sam'])}
+            </div>
+          </div>
+
+          ${accordionButton('schoolBoard', 'School Board')}
+          <div id="schoolBoard-panel" ${state.openSections.schoolBoard ? '' : 'hidden'}>
+            <h2>District 2</h2>
+            <div class="candidate-list" aria-label="School Board District 2 candidates">
+              ${candidateRows(['claire', 'john', 'rae'])}
+            </div>
+            <h2>District 6</h2>
+            <div class="candidate-list" aria-label="School Board District 6 candidates">
+              ${candidateRows(['sec', 'ted'])}
+            </div>
           </div>
         `;
         renderSummary(true);
@@ -800,7 +868,7 @@
           </section>
           ${pageBackButton()}
           <p>Double-check your donations. Any donations made cannot be canceled or transferred.</p>
-          <section aria-label="Selected donations">
+          <section class="review-list" aria-label="Selected donations">
             ${hasDonations ? selectedDonationRows() : '<p>No donations selected yet.</p>'}
           </section>
           <div class="totals" aria-label="Donation totals">
